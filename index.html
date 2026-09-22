@@ -104,7 +104,7 @@
 
 <h2>1 · Six-turn agent task — full field (total cost to finish the job)</h2>
 <div class="card" id="full"></div>
-<p class="note">All six models completed the same multi-turn agent job. Opus 5 (red) is the "premium" pick — 77× the price for the same output.</p>
+<p class="note">All six models completed the same multi-turn agent job. Opus 5 (red) is the "premium" pick — 77× the price for the same output. † MiMo v2.6 rows: measured the same day with the updated runner config (reasoning excluded, <code>max_tokens</code> 2000); under that config GLM-5.3-flash costs $0.0049. The Sep 22 original-config bars are kept unchanged for the legacy comparison.</p>
 
 <h2>2 · Six-turn agent task — open-weight models only</h2>
 <div class="card" id="open"></div>
@@ -112,11 +112,11 @@
 
 <h2>3 · Cost growth per turn (full field) — who ramps up fastest?</h2>
 <div class="card" id="lines"></div>
-<p class="note">Qwen3-235B explodes past every other model from turn 1 — it writes thousands of tokens per turn. Opus 5 is a steady, expensive climb. GLM flash hugs the floor the whole way.</p>
+<p class="note">Qwen3-235B explodes past every other model from turn 1 — it writes thousands of tokens per turn. Opus 5 is a steady, expensive climb. GLM flash hugs the floor the whole way. † MiMo v2.6 lines use the updated config (reasoning excluded, <code>max_tokens</code> 2000); MiMo-flash tracks GLM's legacy curve until its context re-reads compound late.</p>
 
 <h2>4 · Simple Q&amp;A — cost per answer</h2>
 <div class="card" id="qa"></div>
-<p class="note">Even for a plain question, Opus 5 charges ~30–150× more than GLM flash.</p>
+<p class="note">Even for a plain question, Opus 5 charges ~30–150× more than GLM flash. † Rows marked with the dagger were re-measured with the updated config (reasoning excluded): MiMo-flash $0.00011, MiMo-pro $0.00032, and GLM-5.3-flash now just $0.00005 per answer — reasoning tokens were the hidden cost driver.</p>
 
 <h2>5 · Live preset runs — run it yourself</h2>
 <div class="card" id="presetSection">
@@ -149,6 +149,8 @@ bars(document.getElementById('full'), [
   {n:'DeepSeek V4 Pro',v:0.015467,c:'var(--dsv4)'},
   {n:'Claude Sonnet 5',v:0.044934,c:'var(--sonnet)'},
   {n:'Claude Opus 5', v:0.139985, c:'var(--opus)'},
+  {n:'MiMo-v2.6-flash†', v:0.002105, c:'#ff7043'},
+  {n:'MiMo-v2.6-pro†',  v:0.007067, c:'#ba68c8'},
 ]);
 
 bars(document.getElementById('open'), [
@@ -165,6 +167,8 @@ const lineData = {
   'Claude Sonnet 5': {c:'var(--sonnet)',p:[0.002864,0.010904,0.020846,0.031276,0.039136,0.044934]},
   'Claude Opus 5':   {c:'var(--opus)', p:[0.02066,0.044265,0.068,0.0919,0.115875,0.139985]},
   'Qwen3-235B':      {c:'var(--qwen)', p:[0.00381,0.011008,0.019142,0.023643,0.026426,0.028895]},
+  'MiMo-v2.6-flash†':{c:'#ff7043',    p:[0.000192,0.00059,0.001158,0.001615,0.001955,0.002105]},
+  'MiMo-v2.6-pro†':  {c:'#ba68c8',    p:[0.001777,0.002172,0.004144,0.004909,0.006118,0.007067]},
 };
 const W=900,H=340,PL=70,PB=36,PT=14,PR=10;
 const turns=[1,2,3,4,5,6], yMax=0.14;
@@ -190,6 +194,9 @@ bars(document.getElementById('qa'), [
   {n:'GPT-5.6-luna',  v:0.000799, c:'var(--luna)'},
   {n:'Claude Sonnet 5',v:0.00329, c:'var(--sonnet)'},
   {n:'Claude Opus 5', v:0.0201,   c:'var(--opus)'},
+  {n:'MiMo-v2.6-flash†', v:0.0001138, c:'#ff7043'},
+  {n:'MiMo-v2.6-pro†',   v:0.0003249, c:'#ba68c8'},
+  {n:'GLM-5.3-flash†',   v:0.0000482, c:'var(--glm)'},
 ]);
 
 // --- live preset runs (fetched from data/preset_runs.csv) ----------------
