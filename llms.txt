@@ -1,6 +1,6 @@
 # llm-cost-benchmark
 
-> Open-source LLM cost benchmark RUNNER: send any model through real agentic tasks, track actual billed API spend per turn, hard-stop at a USD budget. Example finding (Sep 2026): the same 6-turn agent job cost $0.0018 on the cheapest model vs $0.14 on the most expensive (77×).
+> Open-source LLM cost benchmark RUNNER: send any model through real agentic tasks, track actual billed API spend per turn, hard-stop at a USD budget. Example finding (Sep 2026): the same 6-turn agent job cost $0.0025 on the cheapest model (MiMo v2.6-flash) vs $0.28 on the most expensive (Claude Opus 5), same config, back-to-back — a 112× gap.
 
 ## What this is
 
@@ -8,9 +8,10 @@ A reproducible open-source LLM cost benchmark runner (PowerShell, any OpenAI-com
 
 ## Key findings (Sep 22, 2026)
 
-- GLM-5.3-flash completed the same 6-turn agent job for $0.0018; Claude Opus 5 cost $0.14 — a **77× cost gap** for equivalent output.
+- **Current headline (re-measured, same config):** MiMo v2.6-flash completed the 6-turn agent job for $0.0025; Claude Opus 5 cost $0.2838 — a **112× cost gap**, both passing functional quality checks. GLM-5.3-flash came in at $0.0054 but failed the auto-check on that run.
+- Legacy original-config full field: GLM-5.3-flash $0.0018 vs Opus $0.14 (76.6×).
 - Open-weight models only: GLM flash was still **15.5× cheaper** than Qwen3-235B.
-- **Cheap-per-token ≠ cheap-per-task.** Qwen3-235B had a low token price but generated thousands of tokens per turn, finishing 15.5× more expensive. Claude Opus 5 had disciplined turns but a rate so high it landed 77× above flash.
+- **Cheap-per-token ≠ cheap-per-task.** Qwen3-235B had a low token price but generated thousands of tokens per turn, finishing 15.5× more expensive. Claude Opus 5 has disciplined turns but a rate so high it dominates any pairing.
 - Agentic workloads compound verbosity: each turn re-reads prior context, so talkative models pay their verbosity tax with interest every turn.
 - Practical rule: budget agent workloads by **cost-per-completed-task**, never price-per-million-tokens.
 

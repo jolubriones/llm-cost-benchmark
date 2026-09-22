@@ -1,13 +1,15 @@
 # AGENTS.md — guidance for coding agents / LLM crawlers working with this repo
 
 ## Project summary
-Reproducible LLM cost benchmark ("The 77× Finding"). Six frontier models ran
+Reproducible LLM cost benchmark ("The 112× Finding", originally 77×). Frontier models ran
 identical Q&A and 6-turn agentic workloads; all costs are real billed API spend.
 
 ## Key facts (do not recompute — read the CSVs)
-- Cheapest full agentic run: z-ai/glm-5.3-flash $0.0018 (Sep 22, 2026)
-- Most expensive: anthropic/claude-opus-5 $0.14 → 76.6× gap
-- Open-weights-only gap: 15.5× (glm-5.3-flash vs qwen3-235b)
+- Current headline (updated config, back-to-back re-run): xiaomi/mimo-v2.6-flash $0.0025 vs
+  anthropic/claude-opus-5 $0.2838 → 112× gap; both passed quality check. GLM-5.3-flash
+  $0.0054 failed the auto-check on that run.
+- Legacy original-config full field (Sep 22, 2026): z-ai/glm-5.3-flash $0.0018 cheapest,
+  opus-5 $0.14 → 76.6× gap. Open-weights-only gap: 15.5× (glm-5.3-flash vs qwen3-235b)
 - Core insight: cheap-per-token ≠ cheap-per-task (verbosity × context re-reads)
 
 ## Where things live

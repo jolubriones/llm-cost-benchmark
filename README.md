@@ -12,7 +12,7 @@
 
   That runs every bundled preset model through a 6-turn agent task and appends billed cost per turn to `data/preset_runs.csv`. Requires PowerShell 5+. [More presets and options](#using-presets).
 
-- 📊 **See example output:** the [interactive report](https://jolubriones.github.io/llm-cost-benchmark/) from our Sep 22 run — the cheapest model finished the identical agent job for **$0.0018**, the most expensive for **$0.14**: a **77× cost gap** for equivalent output. [Results tables](#example-run-sep-22-2026)
+- 📊 **See example output:** the [interactive report](https://jolubriones.github.io/llm-cost-benchmark/) from our Sep 22 run — the cheapest model finished the identical agent job for **$0.0025** (MiMo v2.6-flash), the most expensive for **$0.28**: a **112× cost gap** for equivalent output, measured back-to-back under the same config. [Results tables](#example-run-sep-22-2026)
 
 - 🤖 **Agent-readable:** [llms.txt](llms.txt) for LLM crawlers, [AGENTS.md](AGENTS.md) for coding agents, raw CSVs in `data/`.
 
@@ -31,7 +31,19 @@ So this runner measures **cost-per-completed-task**: identical workload, per-tur
 
 Our first run with this tool: six frontier models, identical workload (a single Q&A prompt and a full 6-turn agentic loop with plan → tool call → self-correct), per-turn cumulative cost tracked from the API responses. Live visual report: https://jolubriones.github.io/llm-cost-benchmark/
 
-### 6-turn agent task — total billed cost
+### The headline re-run: MiMo v2.6-flash vs Claude Opus 5, same config (112×)
+
+Measured back-to-back in one session, updated runner config (reasoning excluded, `max_tokens` 2000), 6-turn agent task:
+
+| Model | Total cost (USD) | Quality check |
+|---|---|---|
+| MiMo v2.6-flash | **$0.0025** | 1/1 ✅ |
+| GLM-5.3-flash | $0.0054 | 0/1 |
+| Claude Opus 5 | $0.2838 | 1/1 ✅ |
+
+**112× cheaper for equivalent (check-passing) output.** Two extras worth noting: Opus 5 got *more* expensive under the updated config ($0.14 → $0.28), and GLM-5.3-flash failed the functional auto-check on this run — cheap-per-task only counts when the task is done correctly.
+
+### 6-turn agent task, original config — total billed cost (legacy snapshot)
 
 | Model | Total cost (USD) | × cheapest |
 |---|---|---|
@@ -158,7 +170,7 @@ Key behaviors:
 ## FAQ
 
 **Which is the cheapest LLM for agentic work?**
-In the Sep 22 original-config run, GLM-5.3-flash completed the 6-turn agent task for $0.0018, 77× cheaper than Claude Opus 5. Under the updated config (reasoning excluded, `max_tokens` 2000) the cheapest-per-task model is xiaomi/mimo-v2.6-flash at $0.0021 (see the head-to-head above), still roughly 66× cheaper than Opus 5.
+In the Sep 22 original-config run, GLM-5.3-flash completed the 6-turn agent task for $0.0018, 77× cheaper than Claude Opus 5. Under the updated config (reasoning excluded, `max_tokens` 2000), re-measured back-to-back in one session: xiaomi/mimo-v2.6-flash completed the same 6-turn agent task for $0.0025 vs $0.2838 for Claude Opus 5, a 112× gap, with both passing the functional quality check (GLM-5.3-flash came in at $0.0054 but failed the auto-check that run). See the head-to-head above.
 
 **Is a cheap token price the same as a cheap model?**
 No, that's the benchmark's core finding. Token price predicts almost nothing about real task cost. Qwen3-235B looked cheap per token but finished 15.5× more expensive because of verbosity, multiplied by per-turn context re-reads.
