@@ -1,0 +1,26 @@
+{
+  "name": "agentic-data-analysis",
+  "description": "Given a messy CSV, produce cleaning code and summary insights across iterative turns. Tests analytical reasoning per turn-cost.",
+  "task_file": "tasks/agentic-data-analysis.md",
+  "turns": 6,
+  "max_tokens": 1200,
+  "temperature": 0.2,
+  "budget_usd": 0.75,
+  "models": [
+    "z-ai/glm-5.3-flash",
+    "deepseek/deepseek-v4-pro-0813",
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-opus-5"
+  ],
+  "followups": [
+    "Now handle missing values: numeric columns get the median, text columns get 'unknown'. Output the cleaning function only.",
+    "Add duplicate detection: rows with identical Name+Date are duplicates, keep the highest Score. Output the function only.",
+    "Write a function that returns summary stats: row count, per-numeric-column min/max/mean, rounded to 2 decimals.",
+    "The client says dates come in three formats: YYYY-MM-DD, MM/DD/YYYY, and 'March 5 2026'. Normalize all to YYYY-MM-DD. Output the function only.",
+    "Write a one-paragraph executive summary of what this cleaned dataset represents and what should be checked before trusting it.",
+    "List the 3 riskiest data-quality assumptions in your cleaning approach, one line each."
+  ],
+  "auto_checks": [
+    { "name": "returns_code", "type": "regex", "pattern": "(function|def|return|param)" }
+  ]
+}

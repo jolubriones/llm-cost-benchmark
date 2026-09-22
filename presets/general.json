@@ -1,0 +1,26 @@
+{
+  "name": "general",
+  "description": "Quick-run general benchmark: 6-turn generic agent task (plan, implement, self-correct). For people who just want a fast cost check.",
+  "task_file": "tasks/general.md",
+  "turns": 6,
+  "max_tokens": 800,
+  "temperature": 0.2,
+  "budget_usd": 0.5,
+  "followups": [
+    "Modify it to also accept pipeline input of objects with Name and Score properties instead of a file path.",
+    "Now add a -Descending switch that flips the sort order. Keep everything else.",
+    "Add basic error handling: rows with non-numeric Score should be skipped with a Write-Warning.",
+    "Write a short comment-based help block for the function.",
+    "Finally, list the 3 most likely ways this function could fail in production, one line each."
+  ],
+  "models": [
+    "z-ai/glm-5.3-flash",
+    "openai/gpt-5.6-luna",
+    "deepseek/deepseek-v4-pro-0813",
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-opus-5"
+  ],
+  "auto_checks": [
+    { "name": "returns_code", "type": "regex", "pattern": "(function|def|param|{)" }
+  ]
+}

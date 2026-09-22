@@ -1,0 +1,27 @@
+{
+  "name": "agentic-web-app",
+  "description": "Agentic web development: build a small interactive web app across a multi-turn session. Scored on running JS/HTML output.",
+  "task_file": "tasks/agentic-web-app.md",
+  "turns": 8,
+  "max_tokens": 1500,
+  "temperature": 0.2,
+  "budget_usd": 1.0,
+  "models": [
+    "z-ai/glm-5.3-flash",
+    "deepseek/deepseek-v4-pro-0813",
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-opus-5"
+  ],
+  "followups": [
+    "Add client-side validation: name required, email must match a basic email pattern, score 0-100. Show inline error messages. Only send the changed code.",
+    "Add localStorage persistence: save the list on every add, restore it on page load. Only send the changed code.",
+    "Add a summary bar: total count, average score, best score. Updates on every change. Only send the changed code.",
+    "Refactor the JS into small named functions (no globals outside an IIFE). Only send the changed code.",
+    "Add a search/filter input that filters rows by name as the user types. Only send the changed code.",
+    "Add dark mode toggle persisted in localStorage. Only send the changed code.",
+    "List the 3 most likely bugs in the final code, one line each."
+  ],
+  "auto_checks": [
+    { "name": "html_or_js_present", "type": "regex", "pattern": "(<html|<script|function|addEventListener|document\\.)" }
+  ]
+}

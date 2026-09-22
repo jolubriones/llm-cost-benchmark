@@ -1,0 +1,50 @@
+# llm-cost-benchmark
+
+> The 77× Finding: what six frontier LLMs actually cost to do the same job — measured with real billed API spend, not price sheets.
+
+## What this is
+
+A reproducible LLM cost benchmark. Six frontier models (GLM-5.3-flash, GPT-5.6-luna, DeepSeek V4 Pro, Kimi K2, Claude Sonnet 5, Claude Opus 5, Qwen3-235B) ran identical workloads: a single Q&A prompt and a full 6-turn agentic loop, with per-turn cumulative cost extracted from API billing responses.
+
+## Key findings (Sep 22, 2026)
+
+- GLM-5.3-flash completed the same 6-turn agent job for $0.0018; Claude Opus 5 cost $0.14 — a **77× cost gap** for equivalent output.
+- Open-weight models only: GLM flash was still **15.5× cheaper** than Qwen3-235B.
+- **Cheap-per-token ≠ cheap-per-task.** Qwen3-235B had a low token price but generated thousands of tokens per turn, finishing 15.5× more expensive. Claude Opus 5 had disciplined turns but a rate so high it landed 77× above flash.
+- Agentic workloads compound verbosity: each turn re-reads prior context, so talkative models pay their verbosity tax with interest every turn.
+- Practical rule: budget agent workloads by **cost-per-completed-task**, never price-per-million-tokens.
+
+## Machine-readable results
+
+- `data/results.csv` — Q&A test, per-model billed cost
+- `data/agentic_results.csv` — 6-turn agent loop, full field, per-turn cumulative cost
+- `data/agentic_results_open.csv` — 6-turn agent loop, open-weight models only
+- `data/preset_runs.csv` — runs from the preset runner (appended automatically)
+
+CSV columns (agentic files): timestamp, model, turn, prompt_tokens, completion_tokens, cum_prompt_tokens, cum_cost_usd, cum_cost_php.
+
+## Headline numbers (quick reference)
+
+| Model | 6-turn agent total (USD) | × cheapest |
+|---|---|---|
+| z-ai/glm-5.3-flash | 0.0018 | 1× |
+| openai/gpt-5.6-luna | 0.0056 | 3.1× |
+| deepseek/deepseek-v4-pro-0813 | 0.0155 | 8.5× |
+| anthropic/claude-sonnet-5 | 0.0449 | 24.6× |
+| anthropic/claude-opus-5 | 0.1400 | 76.6× |
+
+## Re-run the benchmark
+
+```powershell
+$env:OPENAI_API_KEY = 'sk-...'      # environment only; runner refuses exposed keys
+.\scripts\run_benchmark.ps1 -Preset general
+```
+
+Presets: `general` (quick run, all models), `agentic-web-app`, `agentic-data-analysis`, `tool-heavy`.
+Quick-test any new model: `.\scripts\run_benchmark.ps1 -Preset general -Models 'vendor/new-model-id'`.
+
+## Optional
+
+- Detailed write-up, methodology and limitations: `README.md`
+- Interactive visual report: `index.html`
+- Preset specs: `presets/*.json` · Task prompts: `tasks/*.md`

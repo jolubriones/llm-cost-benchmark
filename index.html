@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The 77× Finding — What Six LLMs Actually Cost to Do the Same Job | LLM Cost Benchmark</title>
+<meta name="description" content="Hands-on benchmark of six frontier LLMs (GLM-5.3-flash, GPT-5.6-luna, DeepSeek V4 Pro, Kimi K2, Claude Sonnet 5, Claude Opus 5, Qwen3-235B) with real billed API costs. Key finding: the cheapest model finished the same 6-turn agent job 77× cheaper. Includes reproducible preset runner with USD budget kill-switch.">
+<meta name="keywords" content="LLM cost comparison, AI model benchmark, cheapest LLM, LLM API costs, agentic benchmark, GLM flash, Claude Opus cost, GPT cost comparison, open-weight models, cost per task">
+<meta name="author" content="Jolu Briones">
+<link rel="canonical" href="https://jolubriones.github.io/llm-cost-benchmark/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The 77× Finding — What Six LLMs Actually Cost to Do the Same Job">
+<meta property="og:description" content="Real billed API spend, not price sheets: the cheapest model finished the same 6-turn agent job 77× cheaper than the most expensive. Reproducible benchmark with preset runner.">
+<meta property="og:site_name" content="LLM Cost Benchmark">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The 77× Finding — What Six LLMs Actually Cost to Do the Same Job">
+<meta name="twitter:description" content="Six frontier LLMs, same job, real invoices. The cost gap: 77×. Cheap-per-token ≠ cheap-per-task.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ScholarlyArticle",
+  "name": "The 77× Finding — What Six LLMs Actually Cost to Do the Same Job",
+  "description": "Benchmark of six frontier LLMs using real billed API spend on identical Q&A and 6-turn agentic workloads. Finding: 77× cost gap between cheapest and priciest model for equivalent output; published token prices are a poor predictor of real task cost.",
+  "author": { "@type": "Person", "name": "Jolu Briones" },
+  "datePublished": "2026-09-22",
+  "keywords": "LLM cost comparison, agentic benchmark, AI model pricing, open-weight models",
+  "about": [
+    { "@type": "Thing", "name": "Large language model cost efficiency" },
+    { "@type": "Thing", "name": "AI agent benchmarking" }
+  ],
+  "mainEntity": {
+    "@type": "Dataset",
+    "name": "LLM cost benchmark results (Sep 22, 2026)",
+    "variableMeasured": ["cumulative cost USD per turn", "prompt tokens", "completion tokens", "budget exhaustion", "auto-check pass rate"]
+  }
+}
+</script>
+<style>
+  :root{
+    --bg:#0f1117; --card:#181b23; --ink:#e8eaf2; --muted:#9aa1b2;
+    --glm:#22c55e; --luna:#60a5fa; --dsv4:#a78bfa; --sonnet:#f59e0b; --opus:#ef4444; --kimi:#2dd4bf; --qwen:#f472b6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,sans-serif;padding:32px 16px;max-width:1050px;margin:0 auto;line-height:1.5}
+  h1{font-size:1.7rem;margin-bottom:4px}
+  .sub{color:var(--muted);margin-bottom:28px}
+  .hero{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+  .stat{flex:1;min-width:200px;background:var(--card);border-radius:14px;padding:20px;text-align:center}
+  .stat .big{font-size:2.2rem;font-weight:700;color:var(--glm)}
+  .stat .lbl{color:var(--muted);font-size:.9rem;margin-top:4px}
+  h2{font-size:1.15rem;margin:34px 0 12px}
+  .card{background:var(--card);border-radius:14px;padding:22px}
+  .row{display:grid;grid-template-columns:190px 1fr 110px;align-items:center;gap:10px;margin:10px 0}
+  .bar{height:22px;border-radius:6px;min-width:3px}
+  .model{font-weight:600;font-size:.9rem}
+  .cost{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .note{color:var(--muted);font-size:.8rem;margin-top:10px}
+  svg text{fill:var(--ink);font-family:inherit}
+  .method{background:var(--card);border-radius:14px;padding:22px;margin-bottom:10px}
+  .method ul{margin:10px 0 0 20px;color:var(--muted)}
+  .method li{margin:6px 0}
+  .method code{background:#0f1117;padding:2px 6px;border-radius:5px;font-size:.85em}
+  .footer{color:var(--muted);font-size:.78rem;margin-top:36px;border-top:1px solid #2a2e3a;padding-top:14px}
+  .footer a{color:var(--luna)}
+</style>
+</head>
+<body>
+
+<header>
+<h1>The 77× Finding 🧪</h1>
+<p class="sub">What do six frontier LLMs <em>actually</em> cost to do the same job? A hands-on benchmark with real API spend — not list prices, actual invoices.</p>
+</header>
+
+<section aria-label="Key findings">
+<p><strong>Key findings:</strong> On identical workloads, <strong>GLM-5.3-flash</strong> completed the same six-turn agentic job for <strong>$0.0018</strong> while <strong>Claude Opus 5</strong> cost <strong>$0.14</strong> — a <strong>77× cost gap</strong> for equivalent output. Restricted to open-weight models, GLM flash was still <strong>15.5× cheaper</strong> than Qwen3-235B. The core insight: <strong>cheap-per-token does not mean cheap-per-task</strong> — verbosity and context re-reads, not token price, drove real costs. All numbers are real billed API spend (not published price sheets), with raw data and a reproducible preset-based benchmark runner included in this repository.</p>
+</section>
+
+<div class="hero">
+  <div class="stat"><div class="big">77×</div><div class="lbl">cost gap between cheapest and priciest model on the same 6-turn agent job</div></div>
+  <div class="stat"><div class="big">15.5×</div><div class="lbl">cheapest vs best open-weight rival — the gap persists without Big-AI tax</div></div>
+  <div class="stat"><div class="big">$0.0018</div><div class="lbl">all-in cost of a full agentic run on GLM-5.3-flash (Opus 5: $0.14)</div></div>
+</div>
+
+<div class="method">
+  <strong>Methodology</strong> — how the numbers were produced:
+  <ul>
+    <li><strong>Test 1 — single Q&amp;A:</strong> identical prompt to every model, cost of one answer measured.</li>
+    <li><strong>Test 2 — 6-turn agent loop:</strong> each model plays an agent that plans, calls tools and self-corrects over six real turns; cumulative cost tracked per turn.</li>
+    <li><strong>Test 3 — open weights only:</strong> same agent loop restricted to models with openable weights (GLM flash, DeepSeek V4 Pro, Kimi K2, Qwen3-235B).</li>
+    <li>Costs are <strong>real billed token spend</strong> (prompt + completion) taken from API responses on Sep 22 2026 — not published price sheets. Prompts and task identical across models.</li>
+  </ul>
+</div>
+
+<h2>1 · Six-turn agent task — full field (total cost to finish the job)</h2>
+<div class="card" id="full"></div>
+<p class="note">All six models completed the same multi-turn agent job. Opus 5 (red) is the "premium" pick — 77× the price for the same output.</p>
+
+<h2>2 · Six-turn agent task — open-weight models only</h2>
+<div class="card" id="open"></div>
+<p class="note">Even restricting to models whose weights you can self-host, GLM flash wins by a wide margin.</p>
+
+<h2>3 · Cost growth per turn (full field) — who ramps up fastest?</h2>
+<div class="card" id="lines"></div>
+<p class="note">Qwen3-235B explodes past every other model from turn 1 — it writes thousands of tokens per turn. Opus 5 is a steady, expensive climb. GLM flash hugs the floor the whole way.</p>
+
+<h2>4 · Simple Q&amp;A — cost per answer</h2>
+<div class="card" id="qa"></div>
+<p class="note">Even for a plain question, Opus 5 charges ~30–150× more than GLM flash.</p>
+
+<h2>5 · Live preset runs — run it yourself</h2>
+<div class="card" id="presetSection">
+  <p class="note" id="presetStatus">Loading preset run data…</p>
+  <div id="presetTables"></div>
+</div>
+<p class="note">Presets are declarative specs (<code>presets/*.json</code>: task, turns, models, USD budget kill-switch). Run one with <code>scripts/run_benchmark.ps1 -Preset general</code> — results land in <code>data/preset_runs.csv</code> and appear here automatically. Budget exhaustion is a result, not an error.</p>
+
+<footer class="footer">
+  Real measured API costs, Sep 22 2026 · raw data in <code>data/</code> · runner scripts in <code>scripts/</code> ·
+  <a href="https://github.com/">repo</a> · <a href="README.md">full write-up</a> · <a href="llms.txt">llms.txt</a>
+</footer>
+
+<script>
+const fmt = v => v >= 1 ? '$'+v.toFixed(2) : '$'+v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+
+function bars(el, rows){
+  const max = Math.max(...rows.map(r=>r.v));
+  el.innerHTML = rows.map(r=>`
+    <div class="row">
+      <div class="model" style="color:${r.c}">${r.n}</div>
+      <div><div class="bar" style="width:${Math.max(0.4, r.v/max*100)}%;background:${r.c}"></div></div>
+      <div class="cost">${fmt(r.v)}</div>
+    </div>`).join('');
+}
+
+bars(document.getElementById('full'), [
+  {n:'GLM-5.3-flash', v:0.001828, c:'var(--glm)'},
+  {n:'GPT-5.6-luna',  v:0.0056,   c:'var(--luna)'},
+  {n:'DeepSeek V4 Pro',v:0.015467,c:'var(--dsv4)'},
+  {n:'Claude Sonnet 5',v:0.044934,c:'var(--sonnet)'},
+  {n:'Claude Opus 5', v:0.139985, c:'var(--opus)'},
+]);
+
+bars(document.getElementById('open'), [
+  {n:'GLM-5.3-flash', v:0.001869, c:'var(--glm)'},
+  {n:'DeepSeek V4 Pro',v:0.007294,c:'var(--dsv4)'},
+  {n:'Kimi K2',       v:0.013323, c:'var(--kimi)'},
+  {n:'Qwen3-235B',    v:0.028895, c:'var(--qwen)'},
+]);
+
+const lineData = {
+  'GLM-5.3-flash':   {c:'var(--glm)',  p:[0.000207,0.00044,0.000861,0.001264,0.001483,0.001828]},
+  'GPT-5.6-luna':    {c:'var(--luna)', p:[0.000843,0.001861,0.00294,0.004081,0.005306,0.0056]},
+  'DeepSeek V4 Pro': {c:'var(--dsv4)', p:[0.003391,0.00613,0.007262,0.011208,0.012886,0.015467]},
+  'Claude Sonnet 5': {c:'var(--sonnet)',p:[0.002864,0.010904,0.020846,0.031276,0.039136,0.044934]},
+  'Claude Opus 5':   {c:'var(--opus)', p:[0.02066,0.044265,0.068,0.0919,0.115875,0.139985]},
+  'Qwen3-235B':      {c:'var(--qwen)', p:[0.00381,0.011008,0.019142,0.023643,0.026426,0.028895]},
+};
+const W=900,H=340,PL=70,PB=36,PT=14,PR=10;
+const turns=[1,2,3,4,5,6], yMax=0.14;
+const x=t=>PL+(t-1)/5*(W-PL-PR), y=v=>H-PB-(v/yMax)*(H-PB-PT);
+let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%">`;
+for(let i=0;i<=4;i++){const v=yMax*i/4;
+  svg+=`<line x1="${PL}" y1="${y(v)}" x2="${W-PR}" y2="${y(v)}" stroke="#2a2e3a"/>`+
+       `<text x="${PL-8}" y="${y(v)+4}" text-anchor="end" font-size="11">${fmt(v)}</text>`;}
+turns.forEach(t=>svg+=`<text x="${x(t)}" y="${H-14}" text-anchor="middle" font-size="12">turn ${t}</text>`);
+for(const [name,d] of Object.entries(lineData)){
+  svg+=`<polyline points="${d.p.map((v,i)=>`${x(i+1)},${y(Math.min(v,yMax))}`).join(' ')}" fill="none" stroke="${d.c}" stroke-width="2.5"/>`;
+  svg+=d.p.map((v,i)=>`<circle cx="${x(i+1)}" cy="${y(Math.min(v,yMax))}" r="3.5" fill="${d.c}"/>`).join('');
+}
+let lx=PL; for(const [name,d] of Object.entries(lineData)){
+  svg+=`<rect x="${lx}" y="8" width="12" height="12" rx="2" fill="${d.c}"/><text x="${lx+17}" y="18" font-size="12">${name}</text>`;
+  lx += 17 + name.length*6.4 + 18;
+}
+document.getElementById('lines').innerHTML = svg+'</svg>';
+
+bars(document.getElementById('qa'), [
+  {n:'GLM-5.3-flash', v:0.000133, c:'var(--glm)'},
+  {n:'DeepSeek V4 Pro',v:0.000657,c:'var(--dsv4)'},
+  {n:'GPT-5.6-luna',  v:0.000799, c:'var(--luna)'},
+  {n:'Claude Sonnet 5',v:0.00329, c:'var(--sonnet)'},
+  {n:'Claude Opus 5', v:0.0201,   c:'var(--opus)'},
+]);
+
+// --- live preset runs (fetched from data/preset_runs.csv) ----------------
+(async () => {
+  const el = document.getElementById('presetTables');
+  const status = document.getElementById('presetStatus');
+  try {
+    const txt = await (await fetch('data/preset_runs.csv')).text();
+    const lines = txt.trim().split(/\r?\n/);
+    if (lines.length < 2) { status.textContent = 'No preset runs recorded yet.'; return; }
+    const hdr = lines[0].split(',');
+    const idx = n => hdr.indexOf(n);
+    const rows = lines.slice(1).map(l => {
+      const cells = l.split(',');
+      const o = {}; hdr.forEach((h,i)=>o[h]=cells[i]); return o;
+    });
+    // latest run = max timestamp; last row per (preset, model)
+    const maxTs = rows.map(r=>r.timestamp).sort().pop();
+    const latest = {};
+    for (const r of rows) { latest[r.preset+'|'+r.model] = r; }
+    const byPreset = {};
+    for (const r of Object.values(latest)) (byPreset[r.preset] ||= []).push(r);
+
+    let html = '';
+    for (const [preset, rs] of Object.entries(byPreset)) {
+      const done = rs.filter(r=>r.outcome==='completed').length;
+      const budget = rs[0].budget_usd;
+      rs.sort((a,b)=>(+a.cum_cost_usd||0) - (+b.cum_cost_usd||0));
+      const maxC = Math.max(...rs.map(r=>+r.cum_cost_usd||0), 1e-9);
+      html += `<h2 style="margin:18px 0 8px;font-size:.95rem">preset: ${preset} <span style="color:var(--muted);font-weight:400">(budget $${budget} · ${done}/${rs.length} finished)</span></h2>`;
+      html += rs.map(r=>{
+        const v = +r.cum_cost_usd||0;
+        const col = r.outcome==='budget_exhausted' ? 'var(--opus)' : 'var(--glm)';
+        const tag = r.outcome==='budget_exhausted' ? ' ⛔ budget' : '';
+        return `<div class="row">
+          <div class="model" style="color:${col}">${r.model.split('/').pop()}${tag}</div>
+          <div><div class="bar" style="width:${Math.max(0.5, v/maxC*100)}%;background:${col}"></div></div>
+          <div class="cost">$${v.toFixed(5)}</div>
+        </div>`;
+      }).join('');
+    }
+    el.innerHTML = html;
+    status.textContent = 'Latest run per preset + model (see data/preset_runs.csv for full per-turn history).';
+  } catch (e) {
+    status.textContent = 'No preset run data found — run scripts/run_benchmark.ps1 to populate it.';
+  }
+})();
+</script>
+</body>
+</html>

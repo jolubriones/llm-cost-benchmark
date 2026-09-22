@@ -1,0 +1,30 @@
+{
+  "name": "tool-heavy",
+  "description": "Many small tool-shaped calls in one session. Exposes per-turn context re-read cost — the profile where verbose models blow up (the Qwen effect).",
+  "task_file": "tasks/tool-heavy.md",
+  "turns": 10,
+  "max_tokens": 500,
+  "temperature": 0.2,
+  "budget_usd": 0.75,
+  "models": [
+    "z-ai/glm-5.3-flash",
+    "deepseek/deepseek-v4-pro-0813",
+    "moonshotai/kimi-k2",
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-opus-5"
+  ],
+  "followups": [
+    "TOOL RESULT: {status:'ok', path:'src/app.js', lines:214}. Next step?",
+    "TOOL RESULT: {status:'ok', lines_with_TODO:[42, 87, 133]}. Next step?",
+    "TOOL RESULT: line 42: 'TODO: validate input before parse'. Decide and continue.",
+    "TOOL RESULT: {status:'error', line:87, message:'unexpected token }'}. Decide and continue.",
+    "TOOL RESULT: {status:'ok', patch_applied:true, remaining_errors:0}. Next step?",
+    "TOOL RESULT: {status:'ok', tests:12, passed:12}. Next step?",
+    "TOOL RESULT: {status:'ok', lint:'clean'}. Is the task done? Answer DONE or the next step only.",
+    "TOOL RESULT: {status:'ok', build:'success', size_kb:41}. Answer DONE or next step only.",
+    "TOOL RESULT: {status:'ok', deploy:'staging'}. Answer DONE or next step only."
+  ],
+  "auto_checks": [
+    { "name": "terse_tool_responses", "type": "regex", "pattern": "(?s)^.{1,600}$" }
+  ]
+}
