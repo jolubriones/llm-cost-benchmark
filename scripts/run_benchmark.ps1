@@ -200,7 +200,13 @@ foreach ($file in $files) {
 
                 $cost = if ($resp.usage.cost) { [double]$resp.usage.cost } else { 0.0 }
                 $cumCost += $cost
-                $history += @{ role = 'assistant'; content = $resp.choices[0].message.content }
+                # Reasoning models may return an empty visible content field
+                # (answer lives in reasoning_content). Providers like Xiaomi
+                # reject replayed assistant messages with no content, so
+                # coerce to a placeholder on history append.
+                $asst = [string]$resp.choices[0].message.content
+                if ([string]::IsNullOrWhiteSpace($asst)) { $asst = '[no visible output - reasoning only]' }
+                $history += @{ role = 'assistant'; content = $asst }
 
                 $stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', $inv)
                 $row = [ordered]@{
