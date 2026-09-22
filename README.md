@@ -154,7 +154,7 @@ Key behaviors:
 ## FAQ
 
 **Which is the cheapest LLM for agentic work?**
-In this benchmark, GLM-5.3-flash, it completed the same 6-turn agent task for $0.0018, 77× cheaper than Claude Opus 5 and 15.5× cheaper than the best open-weight alternative (Qwen3-235B).
+In the Sep 22 original-config run, GLM-5.3-flash completed the 6-turn agent task for $0.0018, 77× cheaper than Claude Opus 5. Under the updated config (reasoning excluded, `max_tokens` 2000) the cheapest-per-task model is xiaomi/mimo-v2.6-flash at $0.0021 (see the head-to-head above), still roughly 66× cheaper than Opus 5.
 
 **Is a cheap token price the same as a cheap model?**
 No, that's the benchmark's core finding. Token price predicts almost nothing about real task cost. Qwen3-235B looked cheap per token but finished 15.5× more expensive because of verbosity, multiplied by per-turn context re-reads.

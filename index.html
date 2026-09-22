@@ -104,7 +104,7 @@
 
 <h2>1 · Six-turn agent task — full field (total cost to finish the job)</h2>
 <div class="card" id="full"></div>
-<p class="note">All six models completed the same multi-turn agent job. Opus 5 (red) is the "premium" pick — 77× the price for the same output. † MiMo v2.6 rows: measured the same day with the updated runner config (reasoning excluded, <code>max_tokens</code> 2000); under that config GLM-5.3-flash costs $0.0049. The Sep 22 original-config bars are kept unchanged for the legacy comparison.</p>
+<p class="note">All six models completed the same multi-turn agent job. Opus 5 (red) is the "premium" pick — 77× the price for the same output. † MiMo v2.6 rows: measured the same day with the updated runner config (reasoning excluded, <code>max_tokens</code> 2000); under that config GLM-5.3-flash costs $0.0049. The Sep 22 original-config bars are kept unchanged for the legacy comparison. <strong>Note on the headline:</strong> the 77× figure is the original-config Opus-vs-GLM pairing; under the updated config the current cheapest-per-task model is MiMo v2.6-flash (66× cheaper than Opus).</p>
 
 <h2>2 · Six-turn agent task — open-weight models only</h2>
 <div class="card" id="open"></div>
@@ -131,7 +131,7 @@
 </footer>
 
 <script>
-const fmt = v => v >= 1 ? '$'+v.toFixed(2) : '$'+v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+const fmt = v => v >= 1 ? '$'+v.toFixed(2) : v >= 0.001 ? '$'+v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'') : '$'+v.toFixed(5).replace(/0+$/,'').replace(/\.$/,'');
 
 function bars(el, rows){
   rows = [...rows].sort((a,b)=>a.v-b.v);   // cheapest first
