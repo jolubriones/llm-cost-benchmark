@@ -1,14 +1,35 @@
-# The 77× Finding — What Six LLMs Actually Cost to Do the Same Job
+# llm-cost-benchmark — run real-cost LLM benchmarks with a budget kill-switch
 
-**[📊 Open the interactive report](https://jolubriones.github.io/llm-cost-benchmark/)** · [Raw data (CSV)](data/) · [Run it yourself](#using-presets) · Agent-readable summary: [llms.txt](llms.txt)
+**What does it actually cost a model to do *your* job?** Don't guess from price sheets. This open-source benchmark runner sends any model (or set of models) through a real agentic task, tracks **actual billed API spend** turn by turn, and hard-stops every model at a USD budget you choose.
 
-A hands-on LLM cost benchmark using **real billed API spend** — not price-sheet math. Six frontier models ran the identical workload: a single Q&A prompt, and a full 6-turn agentic loop (plan → tool call → self-correct), with per-turn cumulative cost tracked from the API responses themselves.
+- ⚡ **Quickstart (3 lines):**
 
-**The headline:** the cheapest model finished the same agent job for **$0.0018**; the most expensive finished the same job for **$0.14** — a **77× cost gap** for equivalent output.
+  ```powershell
+  git clone https://github.com/jolubriones/llm-cost-benchmark.git
+  $env:OPENAI_API_KEY = 'sk-...'        # OpenRouter-compatible by default
+  .\scripts\run_benchmark.ps1 -Preset general
+  ```
 
-**Contents:** [Results](#results-sep-22-2026) · [The insight](#the-actual-insight-cheap-per-token--cheap-per-job) · [Methodology](#methodology) · [Using presets](#using-presets) · [FAQ](#faq) · [Limitations](#limitations) · [Repo layout](#repo-layout)
+  That runs every bundled preset model through a 6-turn agent task and appends billed cost per turn to `data/preset_runs.csv`. Requires PowerShell 5+. [More presets and options](#using-presets).
 
-## Results (Sep 22, 2026)
+- 📊 **See example output:** the [interactive report](https://jolubriones.github.io/llm-cost-benchmark/) from our Sep 22 run — the cheapest model finished the identical agent job for **$0.0018**, the most expensive for **$0.14**: a **77× cost gap** for equivalent output. [Results tables](#example-run-sep-22-2026)
+
+- 🤖 **Agent-readable:** [llms.txt](llms.txt) for LLM crawlers, [AGENTS.md](AGENTS.md) for coding agents, raw CSVs in `data/`.
+
+**Contents:** [Quickstart](#quickstart) · [Why per-task cost](#why-per-task-cost-not-per-token) · [Using presets](#using-presets) · [Key behaviors](#key-behaviors) · [Example run (Sep 22, 2026)](#example-run-sep-22-2026) · [The insight](#the-actual-insight-cheap-per-token--cheap-per-job) · [Methodology](#methodology) · [FAQ](#faq) · [Limitations](#limitations) · [Repo layout](#repo-layout) · [Contributing](#contributing)
+
+## Why per-task cost, not per-token
+
+Published token prices are a poor predictor of real task cost. The cheapest-looking model on a price sheet can be the most expensive one in production, because:
+
+- **Verbosity compounds:** in agentic workloads each turn re-reads prior context, so a talkative model pays its verbosity tax *with interest* every turn.
+- **Token price ≠ task price:** a low-rate model that generates thousands of tokens per turn can cost 15× more per task than a disciplined one at the same rate tier.
+
+So this runner measures **cost-per-completed-task**: identical workload, per-turn cumulative cost extracted from the API billing response, hard kill-switch at your budget. "Model X burned its whole budget before finishing" is a data point here, not a footnote.
+
+## Example run (Sep 22, 2026)
+
+Our first run with this tool: six frontier models, identical workload (a single Q&A prompt and a full 6-turn agentic loop with plan → tool call → self-correct), per-turn cumulative cost tracked from the API responses. Live visual report: https://jolubriones.github.io/llm-cost-benchmark/
 
 ### 6-turn agent task — total billed cost
 
@@ -28,12 +49,6 @@ A hands-on LLM cost benchmark using **real billed API spend** — not price-shee
 | DeepSeek V4 Pro | $0.0073 | 3.9× |
 | Kimi K2 | $0.0133 | 7.1× |
 | Qwen3-235B | $0.0289 | **15.5×** |
-
-## Who this is for
-
-- **Anyone choosing a model for agent work** who wants real numbers, not leaderboard vibes or price-sheet guesses.
-- **Developers shipping AI agents** who need to budget per-task spend and set hard caps.
-- **Agents and LLM tooling**: this repo is agent-readable by design — start from [llms.txt](llms.txt) and [AGENTS.md](AGENTS.md). Pull the CSVs in `data/` directly; no scraping needed.
 
 ## The actual insight: cheap-per-token ≠ cheap-per-job
 

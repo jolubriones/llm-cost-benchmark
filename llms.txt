@@ -1,10 +1,10 @@
 # llm-cost-benchmark
 
-> The 77× Finding: what six frontier LLMs actually cost to do the same job — measured with real billed API spend, not price sheets.
+> Open-source LLM cost benchmark RUNNER: send any model through real agentic tasks, track actual billed API spend per turn, hard-stop at a USD budget. Example finding (Sep 2026): the same 6-turn agent job cost $0.0018 on the cheapest model vs $0.14 on the most expensive (77×).
 
 ## What this is
 
-A reproducible LLM cost benchmark. Six frontier models (GLM-5.3-flash, GPT-5.6-luna, DeepSeek V4 Pro, Kimi K2, Claude Sonnet 5, Claude Opus 5, Qwen3-235B) ran identical workloads: a single Q&A prompt and a full 6-turn agentic loop, with per-turn cumulative cost extracted from API billing responses.
+A reproducible open-source LLM cost benchmark runner (PowerShell, any OpenAI-compatible endpoint; OpenRouter by default). Presets define task, turns, models, and a USD budget kill-switch; results append to CSV and render on the live report. Also contains a published example run: seven frontier models (GLM-5.3-flash, GPT-5.6-luna, DeepSeek V4 Pro, Kimi K2, Claude Sonnet 5, Claude Opus 5, Qwen3-235B) ran identical workloads: a single Q&A prompt and a full 6-turn agentic loop, with per-turn cumulative cost extracted from API billing responses.
 
 ## Key findings (Sep 22, 2026)
 
