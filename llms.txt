@@ -16,12 +16,10 @@ A reproducible open-source LLM cost benchmark runner (PowerShell, any OpenAI-com
 
 ## Machine-readable results
 
-- `data/results.csv` — Q&A test, per-model billed cost
-- `data/agentic_results.csv` — 6-turn agent loop, full field, per-turn cumulative cost
-- `data/agentic_results_open.csv` — 6-turn agent loop, open-weight models only
-- `data/preset_runs.csv` — runs from the preset runner (appended automatically)
+- `data/results.csv`, `data/agentic_results.csv`, `data/agentic_results_open.csv` — legacy Sep 22 run files (these also carry a `cum_cost_php` column)
+- `data/preset_runs.csv` — runs from the preset runner (appended automatically; USD is always recorded; optional extra currency column via `-CurrencyCode`/`-CurrencyRate`)
 
-CSV columns (agentic files): timestamp, model, turn, prompt_tokens, completion_tokens, cum_prompt_tokens, cum_cost_usd, cum_cost_php.
+CSV columns: legacy agentic files: timestamp, model, turn, prompt_tokens, completion_tokens, cum_prompt_tokens, cum_cost_usd, cum_cost_php. preset_runs.csv: timestamp, preset, model, turn, prompt_tokens, completion_tokens, cum_cost_usd, budget_usd, outcome, checks_passed.
 
 ## Headline numbers (quick reference)
 

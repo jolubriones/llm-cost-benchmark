@@ -65,7 +65,7 @@ Practical takeaway: when budgeting agent workloads, model **cost-per-completed-t
 1. **Test 1 — Q&A:** identical prompt sent to each model; billed prompt + completion tokens recorded from the API response.
 2. **Test 2 — agentic loop (full field):** each model executes the same 6-turn agent task; cumulative real cost tracked per turn (`agentic_results.csv`).
 3. **Test 3 — open weights only:** same loop restricted to GLM-5.3-flash, DeepSeek V4 Pro, Kimi K2, Qwen3-235B (`agentic_results_open.csv`).
-4. Costs are actual billed spend (USD and PHP), extracted programmatically — see `scripts/run_model_cost_test.ps1` and `scripts/cheap_agentic_test.ps1`.
+4. Costs are actual billed spend in **USD**, extracted programmatically from API responses — see `scripts/run_benchmark.ps1` (`scripts/run_model_cost_test.ps1` and `scripts/cheap_agentic_test.ps1` are legacy scripts that produced the Sep 22 data; their CSVs also carry a `cum_cost_php` column).
 
 ## Repo layout
 
@@ -120,13 +120,15 @@ Run (PowerShell, needs `OPENAI_API_KEY`, OpenRouter-compatible by default):
 # One-off custom task, or a non-OpenRouter OpenAI-compatible endpoint:
 .\scripts\run_benchmark.ps1 -Preset general -Models 'my-model' -TaskText 'Your task here.'
 .\scripts\run_benchmark.ps1 -Preset general -Models 'my-model' -ApiBase 'https://my.host/v1/chat/completions'
+# Costs are recorded in USD by default; add a display currency if you like (e.g. EUR at 0.92 per USD):
+.\scripts\run_benchmark.ps1 -Preset general -CurrencyCode EUR -CurrencyRate 0.92
 ```
 
 Key behaviors:
 - **Key safety gate:** the runner *refuses to start* if the API key exists in plain text anywhere in the repo, or if any `sk-`-shaped string is found in repo files (exposed key = no run; remove it and rotate). The key is accepted from the environment only, and is scrubbed from all error output. A live pre-flight check reports remaining credit before spending anything.
 - **Budget kill-switch:** the moment a model's cumulative cost reaches `budget_usd`, the run aborts and records `outcome=budget_exhausted` — a *result*, not a failure ("Opus burned $1 before finishing" is a data point).
 - **Auto-checks:** cheap regex checks run against the final output (`checks_passed` column); a 1–5 manual quality score can be added per run in the CSV.
-- **Results append to `data/preset_runs.csv`**, and the report page (`index.html` §5) automatically renders the latest run per preset + model. Contribute a preset via PR — drop a JSON in `presets/`.
+- **Results append to `data/preset_runs.csv`**, and the report page (`index.html` §5) automatically renders the latest run per preset + model. All costs are recorded in USD; pass `-CurrencyCode`/`-CurrencyRate` to add a second currency column. Contribute a preset via PR — drop a JSON in `presets/`.
 
 ## FAQ
 

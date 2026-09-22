@@ -25,6 +25,8 @@
     .\run_benchmark.ps1 -Preset general -Models 'vendor/new-model' -TaskText 'Write a haiku about APIs.'
     # Non-OpenRouter endpoint (any OpenAI-compatible API):
     .\run_benchmark.ps1 -Preset general -Models 'my-model' -ApiBase 'https://my.host/v1/chat/completions'
+    # Record costs in a second currency (USD is always recorded):
+    .\run_benchmark.ps1 -Preset general -CurrencyCode EUR -CurrencyRate 0.92
 #>
 param(
     [Parameter(Mandatory)]
@@ -33,7 +35,8 @@ param(
     [string[]]$Models,          # override preset model list (quick-test new models)
     [string]$TaskText,          # override preset task: turn 1 uses this text
     [string]$ApiBase = 'https://openrouter.ai/api/v1/chat/completions',
-    [double]$RateUsdToPhp = 62.91
+    [string]$CurrencyCode = '',   # optional display currency, e.g. 'PHP' (USD is always recorded)
+    [double]$CurrencyRate = 0     # units of CurrencyCode per 1 USD, e.g. 62.9; required with -CurrencyCode
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -129,9 +132,19 @@ if ($Preset -eq 'all') {
 }
 
 $csvPath = Join-Path $root 'data\preset_runs.csv'
+$useCur = $CurrencyCode -and $CurrencyRate -gt 0
+if ($useCur) {
+    $curCode = $CurrencyCode.ToUpperInvariant()
+    $curCol = 'cum_cost_' + $curCode.ToLowerInvariant()
+} else {
+    $curCode = ''; $curCol = $null
+}
 if (-not (Test-Path $csvPath)) {
-    "timestamp,preset,model,turn,prompt_tokens,completion_tokens,cum_cost_usd,cum_cost_php,budget_usd,outcome,checks_passed" |
-        Set-Content -Path $csvPath -Encoding UTF8
+    $header = "timestamp,preset,model,turn,prompt_tokens,completion_tokens,cum_cost_usd,budget_usd,outcome,checks_passed"
+    if ($curCol) {
+        $header = $header -replace 'cum_cost_usd,', "cum_cost_usd,$curCol,"
+    }
+    $header | Set-Content -Path $csvPath -Encoding UTF8
 }
 
 $bar = '=' * 70
@@ -184,15 +197,15 @@ foreach ($file in $files) {
                 $history += @{ role = 'assistant'; content = $resp.choices[0].message.content }
 
                 $stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', $inv)
-                $row = [pscustomobject]@{
+                $row = [ordered]@{
                     timestamp = $stamp; preset = $name; model = $m; turn = $t
                     prompt_tokens = [int]$resp.usage.prompt_tokens
                     completion_tokens = [int]$resp.usage.completion_tokens
                     cum_cost_usd = [math]::Round($cumCost, 6)
-                    cum_cost_php = [math]::Round($cumCost * $RateUsdToPhp, 4)
-                    budget_usd = $budget; outcome = 'running'; checks_passed = $checksPassed
                 }
-                $row | Export-Csv -Path $csvPath -Append -NoTypeInformation -Encoding UTF8
+                if ($curCol) { $row[$curCol] = [math]::Round($cumCost * $CurrencyRate, 4) }
+                $row['budget_usd'] = $budget; $row['outcome'] = 'running'; $row['checks_passed'] = $checksPassed
+                [pscustomobject]$row | Export-Csv -Path $csvPath -Append -NoTypeInformation -Encoding UTF8
                 Write-Host ("   turn {0}: cum `${1:N5}" -f $t, $cumCost) -NoNewline
 
                 # --- budget kill-switch ---------------------------------
@@ -231,8 +244,10 @@ foreach ($file in $files) {
 
         $sw.Stop()
         $short = ($m -replace '^.*[/]', '')
-        Write-Host ("   TOTAL {0}: `${1:N5} | {2} | checks {3}/{4} | {5:N0}s" -f `
-            $short, $cumCost, $outcome, $checksPassed, ($preset.auto_checks | Measure-Object).Count, $sw.Elapsed.TotalSeconds) `
+        $total = '${0:N5}' -f $cumCost
+        if ($curCol) { $total += (' = {0:N4} {1}' -f ($cumCost * $CurrencyRate), $curCode) }
+        Write-Host ("   TOTAL {0}: {1} | {2} | checks {3}/{4} | {5:N0}s" -f `
+            $short, $total, $outcome, $checksPassed, ($preset.auto_checks | Measure-Object).Count, $sw.Elapsed.TotalSeconds) `
             -ForegroundColor Green
     }
 }
