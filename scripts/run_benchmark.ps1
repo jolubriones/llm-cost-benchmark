@@ -101,12 +101,26 @@ function Remove-Key {
 if (-not (Test-KeySafety -Key $apiKey -RepoRoot $root)) { exit 2 }
 
 # 4. Optional live check: confirm the key is valid + see its remaining
-#    credit BEFORE burning anything on runs.
+#    credit BEFORE burning anything on runs. Prefer the /credits endpoint
+#    (true account balance for credit-based accounts); fall back to
+#    /auth/key for per-key limits (sk-... provisioned keys).
 try {
-    $keyInfo = Invoke-RestMethod -Method Get `
-        -Uri ($ApiBase -replace '/chat/completions', '/auth/key') `
-        -Headers @{ Authorization = "Bearer $apiKey" } -TimeoutSec 20
-    $remaining = $keyInfo.data.limit - $keyInfo.data.usage
+    $apiRoot = $ApiBase -replace '/chat/completions', ''
+    $remaining = $null
+    try {
+        $c = Invoke-RestMethod -Method Get -Uri "$apiRoot/credits" `
+            -Headers @{ Authorization = "Bearer $apiKey" } -TimeoutSec 20
+        if ($null -ne $c.data.total_credits) {
+            $remaining = $c.data.total_credits - $c.data.total_usage
+        }
+    } catch { }
+    if ($null -eq $remaining) {
+        $keyInfo = Invoke-RestMethod -Method Get -Uri "$apiRoot/auth/key" `
+            -Headers @{ Authorization = "Bearer $apiKey" } -TimeoutSec 20
+        if ($null -ne $keyInfo.data.limit) {
+            $remaining = $keyInfo.data.limit - $keyInfo.data.usage
+        }
+    }
     if ($null -ne $remaining) {
         Write-Host ("Key OK. Remaining credit on this key: `${0:N2}" -f $remaining) -ForegroundColor DarkGray
         if ($remaining -lt $budget) {
