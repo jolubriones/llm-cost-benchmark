@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -80,6 +80,17 @@
   <div class="stat"><div class="big">15.5×</div><div class="lbl">cheapest vs best open-weight rival — the gap persists without Big-AI tax</div></div>
   <div class="stat"><div class="big">$0.0018</div><div class="lbl">all-in cost of a full agentic run on GLM-5.3-flash (Opus 5: $0.14)</div></div>
 </div>
+
+<section aria-label="Update: quality-graded head-to-head" style="border:1px solid #7aa; border-radius:10px; padding:14px 18px; margin-top:14px">
+  <strong>UPDATE (Sep 22) — quality-graded head-to-head, new value champion:</strong> the same 6-turn task was re-run and each model's final code was <strong>executed in a real Windows PowerShell 5.1 child process</strong> (5 functional checks; transcripts + grader in the repo, <code>scripts/quality_check.ps1</code>).
+  <table style="margin:10px auto; border-collapse:collapse">
+    <tr style="border-bottom:1px solid #667"><th style="padding:4px 14px">Model</th><th style="padding:4px 14px">Cost</th><th style="padding:4px 14px">Time</th><th style="padding:4px 14px">Quality</th></tr>
+    <tr><td style="padding:4px 14px"><strong>xiaomi/mimo-v2.6-flash</strong></td><td style="padding:4px 14px"><strong>$0.0021</strong></td><td style="padding:4px 14px">69s</td><td style="padding:4px 14px"><strong>5/5</strong></td></tr>
+    <tr><td style="padding:4px 14px">z-ai/glm-5.3-flash</td><td style="padding:4px 14px">$0.0049</td><td style="padding:4px 14px">197s</td><td style="padding:4px 14px">5/5</td></tr>
+    <tr><td style="padding:4px 14px">xiaomi/mimo-v2.6-pro</td><td style="padding:4px 14px">$0.0071</td><td style="padding:4px 14px">179s</td><td style="padding:4px 14px">2/5</td></tr>
+  </table>
+  <strong>MiMo v2.6-flash dethrones GLM flash</strong>: 2.3× cheaper, ~3× faster, equally correct. Two failure modes surfaced that cost-only benchmarks miss: reasoning models can return turns with <em>empty visible content</em> (everything stays in <code>reasoning_content</code>, poisoning multi-turn history; fix: <code>reasoning: {exclude: true}</code>, runner switch <code>-ExcludeReasoning</code>), and a small <code>max_tokens</code> budget silently burns on invisible thinking, truncating real output (800 → 2000 fixed it). The "pro" tier cost 3.4× the flash tier and was <em>less</em> reliable (4/5, 3/5, 2/5 across runs).
+</section>
 
 <div class="method">
   <strong>Methodology</strong> — how the numbers were produced:
