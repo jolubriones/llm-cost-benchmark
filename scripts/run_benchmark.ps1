@@ -122,12 +122,12 @@ try {
 # --- end key safety gate --------------------------------------------------
 
 # --- load preset(s) -------------------------------------------------------
-$presetsDir = Join-Path $root 'presets'
+$specsDir = Join-Path $root 'presets'
 if ($Preset -eq 'all') {
-    $files = Get-ChildItem $presetsDir -Filter *.json
+    $files = Get-ChildItem $specsDir -Filter *.json
 } else {
-    $p = Join-Path $presetsDir "$Preset.json"
-    if (-not (Test-Path $p)) { Write-Host "Preset '$Preset' not found in $presetsDir" -ForegroundColor Red; exit 1 }
+    $p = Join-Path $specsDir "$Preset.json"
+    if (-not (Test-Path $p)) { Write-Host "Preset '$Preset' not found in $specsDir" -ForegroundColor Red; exit 1 }
     $files = Get-Item $p
 }
 
@@ -150,25 +150,31 @@ if (-not (Test-Path $csvPath)) {
 $bar = '=' * 70
 
 foreach ($file in $files) {
-    $preset = Get-Content $file.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-    $name   = $preset.name
-    $budget = if ($BudgetUsd -ge 0) { $BudgetUsd } else { [double]$preset.budget_usd }
-    $turns  = [int]$preset.turns
-    $task   = if ($TaskText) { $TaskText } else { Get-Content (Join-Path $root $preset.task_file) -Raw -Encoding UTF8 }
+    $rawPreset = Get-Content $file.FullName -Raw -Encoding UTF8
+    $spec = if ($rawPreset -is [string]) { ConvertFrom-Json -InputObject $rawPreset } else { $rawPreset }
+    if ($null -eq $spec -or $null -eq $spec.task_file) {
+        Write-Host "REFUSING TO RUN: could not parse preset '$($file.FullName)' as JSON." -ForegroundColor Red
+        exit 1
+    }
+    $name   = $spec.name
+    $budget = if ($BudgetUsd -ge 0) { $BudgetUsd } else { [double]$spec.budget_usd }
+    $turns  = [int]$spec.turns
+    # [string] cast strips PS note properties that break ConvertTo-Json.
+    $task = if ($TaskText) { [string]$TaskText } else { [string](Get-Content (Join-Path $root $spec.task_file) -Raw -Encoding UTF8) }
 
     # Ad-hoc model override: quick-test new models against the preset's task.
     if ($Models -and $Models.Count -gt 0) {
-        $preset.models = $Models
+        $spec.models = $Models
         $name = "$name+custom"
     }
 
     Write-Host ''
     Write-Host $bar -ForegroundColor Cyan
     Write-Host ("  PRESET '{0}' | {1} turns | budget `${2:N2}/model" -f $name, $turns, $budget) -ForegroundColor Cyan
-    Write-Host ("  {0}" -f $preset.description) -ForegroundColor DarkGray
+    Write-Host ("  {0}" -f $spec.description) -ForegroundColor DarkGray
     Write-Host $bar -ForegroundColor Cyan
 
-    foreach ($m in $preset.models) {
+    foreach ($m in $spec.models) {
         Write-Host ("`n-> {0}" -f $m) -ForegroundColor Cyan
         $history = @()
         $cumCost = 0.0; $checksPassed = 0; $outcome = 'completed'
@@ -176,15 +182,15 @@ foreach ($file in $files) {
 
         for ($t = 1; $t -le $turns; $t++) {
             if ($t -eq 1) { $prompt = $task }
-            elseif ($preset.followups) { $prompt = $preset.followups[$t - 2] }
+            elseif ($spec.followups) { $prompt = $spec.followups[$t - 2] }
             else { break }
 
             $history += @{ role = 'user'; content = $prompt }
             $body = @{
                 model       = $m
                 messages    = $history
-                max_tokens  = [int]$preset.max_tokens
-                temperature = [double]$preset.temperature
+                max_tokens  = [int]$spec.max_tokens
+                temperature = [double]$spec.temperature
             }
             try {
                 $resp = Invoke-RestMethod -Method Post -Uri $ApiBase `
@@ -218,20 +224,28 @@ foreach ($file in $files) {
             }
             catch {
                 $outcome = 'api_error'
-                Write-Host ("   turn {0} FAILED - {1}" -f $t, (Remove-Key -Text $_.Exception.Message -Key $apiKey)) -ForegroundColor Red
+                $errMsg = $_.Exception.Message
+                try {
+                    # Surface the API's error body (OpenRouter puts the reason there).
+                    $bodyReader = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+                    $errBody = $bodyReader.ReadToEnd()
+                    if ($errBody) { $errMsg = "{0} | {1}" -f $errMsg, $errBody }
+                } catch { }
+                Write-Host ("   turn {0} FAILED - {1}" -f $t, (Remove-Key -Text $errMsg -Key $apiKey)) -ForegroundColor Red
                 break
             }
         }
 
         # --- auto-checks on final assistant output -----------------------
         if ($outcome -eq 'running') { $outcome = 'completed' }
-        if ($outcome -eq 'completed' -and $preset.auto_checks) {
+        if ($outcome -eq 'completed' -and $spec.auto_checks) {
             $final = $history[-1].content
-            $checksPassed = 0
-            foreach ($chk in $preset.auto_checks) {
+            foreach ($chk in $spec.auto_checks) {
                 if ($final -match $chk.pattern) { $checksPassed++ }
             }
-            # stamp last row with final outcome + checks: rewrite via temp re-export
+        }
+        if ($outcome -ne 'running') {
+            # stamp last row with final outcome + checks (any outcome)
             $all = Import-Csv $csvPath
             $last = $all | Where-Object { $_.preset -eq $name -and $_.model -eq $m } |
                 Sort-Object { [datetime]$_.timestamp } | Select-Object -Last 1
@@ -247,7 +261,7 @@ foreach ($file in $files) {
         $total = '${0:N5}' -f $cumCost
         if ($curCol) { $total += (' = {0:N4} {1}' -f ($cumCost * $CurrencyRate), $curCode) }
         Write-Host ("   TOTAL {0}: {1} | {2} | checks {3}/{4} | {5:N0}s" -f `
-            $short, $total, $outcome, $checksPassed, ($preset.auto_checks | Measure-Object).Count, $sw.Elapsed.TotalSeconds) `
+            $short, $total, $outcome, $checksPassed, ($spec.auto_checks | Measure-Object).Count, $sw.Elapsed.TotalSeconds) `
             -ForegroundColor Green
     }
 }
