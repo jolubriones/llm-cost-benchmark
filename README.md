@@ -187,6 +187,8 @@ PRs welcome, two ways:
 
 Found this useful? Star the repo and share the live report: **https://jolubriones.github.io/llm-cost-benchmark/**
 
+If this benchmark saved you real money on your agent workloads, a small tip is always appreciated: [☕ Ko-fi](https://ko-fi.com/jolubriones)
+
 If you reference the finding, please keep the date: *"As of Sep 2026, GLM-5.3-flash completed a 6-turn agent task for $0.0018 vs $0.14 for Claude Opus 5 (77× gap), measured with real billed API spend."*
 
 ## License
