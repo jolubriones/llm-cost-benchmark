@@ -1,5 +1,7 @@
 # The 77× Finding — What Six LLMs Actually Cost to Do the Same Job
 
+**[📊 Open the interactive report](https://jolubriones.github.io/llm-cost-benchmark/)** · [Raw data (CSV)](data/) · [Run it yourself](#using-presets) · Agent-readable summary: [llms.txt](llms.txt)
+
 A hands-on LLM cost benchmark using **real billed API spend** — not price-sheet math. Six frontier models ran the identical workload: a single Q&A prompt, and a full 6-turn agentic loop (plan → tool call → self-correct), with per-turn cumulative cost tracked from the API responses themselves.
 
 **The headline:** the cheapest model finished the same agent job for **$0.0018**; the most expensive finished the same job for **$0.14** — a **77× cost gap** for equivalent output.
@@ -26,6 +28,12 @@ A hands-on LLM cost benchmark using **real billed API spend** — not price-shee
 | DeepSeek V4 Pro | $0.0073 | 3.9× |
 | Kimi K2 | $0.0133 | 7.1× |
 | Qwen3-235B | $0.0289 | **15.5×** |
+
+## Who this is for
+
+- **Anyone choosing a model for agent work** who wants real numbers, not leaderboard vibes or price-sheet guesses.
+- **Developers shipping AI agents** who need to budget per-task spend and set hard caps.
+- **Agents and LLM tooling**: this repo is agent-readable by design — start from [llms.txt](llms.txt) and [AGENTS.md](AGENTS.md). Pull the CSVs in `data/` directly; no scraping needed.
 
 ## The actual insight: cheap-per-token ≠ cheap-per-job
 
@@ -129,6 +137,23 @@ They are actual billed amounts extracted from API responses (`usage.cost`), capt
 
 - Single task per test; one model's "same output quality" is judged by task completion, not output-quality scoring.
 - 2026 pricing snapshot — absolute numbers age fast; the *methodology* (measure per-task, not per-token) doesn't.
+
+## Contributing
+
+PRs welcome, two ways:
+
+- **New preset:** drop a JSON in `presets/` (schema above; a `tasks/<name>.md` turn-1 prompt is required).
+- **New results:** run any preset with your key and append via the runner — `data/preset_runs.csv` renders on the live report automatically.
+
+## Cite / share
+
+Found this useful? Star the repo and share the live report: **https://jolubriones.github.io/llm-cost-benchmark/**
+
+If you reference the finding, please keep the date: *"As of Sep 2026, GLM-5.3-flash completed a 6-turn agent task for $0.0018 vs $0.14 for Claude Opus 5 (77× gap) — measured with real billed API spend."*
+
+## License
+
+MIT — see [LICENSE](LICENSE). Data in `data/` is yours to use; attribution appreciated.
 
 ---
 *Built as a personal benchmarking exercise. Data and scripts included — rerun it yourself.*

@@ -45,6 +45,9 @@ Quick-test any new model: `.\scripts\run_benchmark.ps1 -Preset general -Models '
 
 ## Optional
 
+- Live report: https://jolubriones.github.io/llm-cost-benchmark/
+- License: MIT
+
 - Detailed write-up, methodology and limitations: `README.md`
 - Interactive visual report: `index.html`
 - Preset specs: `presets/*.json` · Task prompts: `tasks/*.md`
