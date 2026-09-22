@@ -172,5 +172,9 @@ If you reference the finding, please keep the date: *"As of Sep 2026, GLM-5.3-fl
 
 MIT — see [LICENSE](LICENSE). Data in `data/` is yours to use; attribution appreciated.
 
+## Built with
+
+The Sep 22 example run — benchmark design, orchestration, analysis, and this report — was built and executed with [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), an open-source agent harness. The runner itself is plain PowerShell and has no dependency on it.
+
 ---
 *Built as a personal benchmarking exercise. Data and scripts included — rerun it yourself.*

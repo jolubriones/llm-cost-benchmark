@@ -45,6 +45,7 @@ Quick-test any new model: `.\scripts\run_benchmark.ps1 -Preset general -Models '
 
 - Live report: https://jolubriones.github.io/llm-cost-benchmark/
 - License: MIT
+- Built with: DeepSeek Harness (https://github.com/deepseek-ai/deepseek-harness) for the Sep 22 example run; the runner itself is plain PowerShell with no harness dependency.
 
 - Detailed write-up, methodology and limitations: `README.md`
 - Interactive visual report: `index.html`
