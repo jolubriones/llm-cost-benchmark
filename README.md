@@ -36,10 +36,14 @@ Our first run with this tool: six frontier models, identical workload (a single 
 | Model | Total cost (USD) | × cheapest |
 |---|---|---|
 | GLM-5.3-flash | $0.0018 | 1× |
+| MiMo v2.6-flash† | $0.0021 | 1.2× |
 | GPT-5.6-luna | $0.0056 | 3.1× |
+| MiMo v2.6-pro† | $0.0071 | 3.9× |
 | DeepSeek V4 Pro | $0.0155 | 8.5× |
 | Claude Sonnet 5 | $0.0449 | 24.6× |
 | Claude Opus 5 | $0.1400 | **76.6×** |
+
+† MiMo v2.6 rows were measured the same day with the updated runner config (reasoning excluded, `max_tokens` 2000), under which GLM-5.3-flash costs $0.0049; the original-config rows are kept for the legacy comparison. See the [head-to-head](#head-to-head-glm-53-flash-vs-mimo-v26-now-with-quality-grading-sep-22-2026-update).
 
 ### Same task, open-weight models only
 
