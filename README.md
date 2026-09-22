@@ -60,12 +60,31 @@ The benchmark's most useful finding isn't "flash models are cheap" — everyone 
 
 Practical takeaway: when budgeting agent workloads, model **cost-per-completed-task**, not price-per-million-tokens. The cheapest-looking model on a price sheet can be the most expensive one in production.
 
+## Head-to-head: GLM-5.3-flash vs MiMo v2.6, now with quality grading (Sep 22, 2026 update)
+
+Cost alone doesn't tell you if the work is any good. We re-ran the 6-turn `general` task (write a PowerShell 5.1 `ConvertTo-TopScores` function, then 5 follow-up modifications) and **functionally graded each model's final code in a real Windows PowerShell 5.1 child process** (`scripts/quality_check.ps1`): 5 checks covering top-N selection, alphabetical tie-breaking, `-Top`, missing-file errors, and pipeline input. Full per-turn transcripts are in `data/outputs/`.
+
+| Model | Cost (6 turns) | Time | Quality (PS 5.1 functional) |
+|---|---|---|---|
+| xiaomi/mimo-v2.6-flash | **$0.0021** | 69s | **5/5** |
+| z-ai/glm-5.3-flash | $0.0049 | 197s | 5/5 |
+| xiaomi/mimo-v2.6-pro | $0.0071 | 179s | 2/5 |
+
+Findings that only a quality-graded run can surface:
+
+- **MiMo v2.6-flash dethrones GLM flash**: 2.3x cheaper, ~3x faster, and equally correct on this task. The cheap-per-task crown moves.
+- **Reasoning-only turns are a real failure mode.** By default, GLM-5.3-flash (via OpenRouter) repeatedly returned turns with *empty visible content*, everything stayed in `reasoning_content`. In a multi-turn loop that poisons the conversation history (and Xiaomi's API outright 400s on replayed empty assistant messages). Passing `reasoning: { exclude: true }` fixes it; the runner now has an `-ExcludeReasoning` switch.
+- **max_tokens starvation is a hidden quality tax.** At `max_tokens=800`, reasoning models burn the budget on invisible thinking: GLM delivered no code at all, MiMo-flash's code was cut off mid-statement and failed to parse. At 2000 tokens all models delivered complete code (the preset now uses 2000).
+- **"Pro" tiers can be worse value per task.** MiMo-pro cost 3.4x MiMo-flash and was *less* reliable across three runs (4/5, 3/5, 2/5, in the final run it dropped the file-path parameter entirely). More tokens ≠ more correct.
+
+Reproduce the grading: run the benchmark (add `-ExcludeReasoning` for reasoning models), then `.\scripts\quality_check.ps1` against the transcripts in `data/outputs/`.
+
 ## Methodology
 
-1. **Test 1 — Q&A:** identical prompt sent to each model; billed prompt + completion tokens recorded from the API response.
-2. **Test 2 — agentic loop (full field):** each model executes the same 6-turn agent task; cumulative real cost tracked per turn (`agentic_results.csv`).
-3. **Test 3 — open weights only:** same loop restricted to GLM-5.3-flash, DeepSeek V4 Pro, Kimi K2, Qwen3-235B (`agentic_results_open.csv`).
-4. Costs are actual billed spend in **USD**, extracted programmatically from API responses — see `scripts/run_benchmark.ps1` (`scripts/run_model_cost_test.ps1` and `scripts/cheap_agentic_test.ps1` are legacy scripts that produced the Sep 22 data; their CSVs also carry a `cum_cost_php` column).
+1. **Test 1, Q&A:** identical prompt sent to each model; billed prompt + completion tokens recorded from the API response.
+2. **Test 2, agentic loop (full field):** each model executes the same 6-turn agent task; cumulative real cost tracked per turn (`agentic_results.csv`).
+3. **Test 3, open weights only:** same loop restricted to GLM-5.3-flash, DeepSeek V4 Pro, Kimi K2, Qwen3-235B (`agentic_results_open.csv`).
+4. Costs are actual billed spend in **USD**, extracted programmatically from API responses, see `scripts/run_benchmark.ps1` (`scripts/run_model_cost_test.ps1` and `scripts/cheap_agentic_test.ps1` are legacy scripts that produced the Sep 22 data; their CSVs also carry a `cum_cost_php` column).
 
 ## Repo layout
 
@@ -75,6 +94,8 @@ README.md                   ← this write-up
 presets/*.json              ← declarative benchmark presets (see below)
 tasks/*.md                  ← turn-1 task prompt per preset
 scripts/run_benchmark.ps1   ← preset runner: budget kill-switch, auto-checks, CSV output
+scripts/quality_check.ps1   ← functional quality grader: runs transcripts' code in real PS 5.1
+data/outputs/               ← per-run transcripts (grade with quality_check.ps1)
 scripts/                    ← legacy single-run scripts from the original Sep 22 test
 data/*.csv                  ← raw results (per-turn history)
 publish.ps1                 ← one-command GitHub Pages push
@@ -82,7 +103,7 @@ publish.ps1                 ← one-command GitHub Pages push
 
 ## Using presets
 
-A preset is a declarative spec — task, turn count, models, and a hard **USD budget kill-switch** per model:
+A preset is a declarative spec, task, turn count, models, and a hard **USD budget kill-switch** per model:
 
 ```json
 {
@@ -101,10 +122,10 @@ Bundled presets:
 
 | Preset | What it tests | Budget/model | Turns |
 |---|---|---|---|
-| `general` | Quick value check — generic agent task, all popular models | $0.50 | 6 |
+| `general` | Quick value check, generic agent task, all popular models | $0.50 | 6 |
 | `agentic-web-app` | Build + iteratively extend a web app | $1.00 | 8 |
 | `agentic-data-analysis` | Clean + analyze a messy CSV over iterative turns | $0.75 | 6 |
-| `tool-heavy` | Many small tool-shaped calls — exposes context re-read burn | $0.75 | 10 |
+| `tool-heavy` | Many small tool-shaped calls, exposes context re-read burn | $0.75 | 10 |
 
 Run (PowerShell, needs `OPENAI_API_KEY`, OpenRouter-compatible by default):
 
@@ -126,17 +147,17 @@ Run (PowerShell, needs `OPENAI_API_KEY`, OpenRouter-compatible by default):
 
 Key behaviors:
 - **Key safety gate:** the runner *refuses to start* if the API key exists in plain text anywhere in the repo, or if any `sk-`-shaped string is found in repo files (exposed key = no run; remove it and rotate). The key is accepted from the environment only, and is scrubbed from all error output. A live pre-flight check reports remaining credit before spending anything.
-- **Budget kill-switch:** the moment a model's cumulative cost reaches `budget_usd`, the run aborts and records `outcome=budget_exhausted` — a *result*, not a failure ("Opus burned $1 before finishing" is a data point).
+- **Budget kill-switch:** the moment a model's cumulative cost reaches `budget_usd`, the run aborts and records `outcome=budget_exhausted`, a *result*, not a failure ("Opus burned $1 before finishing" is a data point).
 - **Auto-checks:** cheap regex checks run against the final output (`checks_passed` column); a 1–5 manual quality score can be added per run in the CSV.
-- **Results append to `data/preset_runs.csv`**, and the report page (`index.html` §5) automatically renders the latest run per preset + model. All costs are recorded in USD; pass `-CurrencyCode`/`-CurrencyRate` to add a second currency column. Contribute a preset via PR — drop a JSON in `presets/`.
+- **Results append to `data/preset_runs.csv`**, and the report page (`index.html` §5) automatically renders the latest run per preset + model. All costs are recorded in USD; pass `-CurrencyCode`/`-CurrencyRate` to add a second currency column. Contribute a preset via PR, drop a JSON in `presets/`.
 
 ## FAQ
 
 **Which is the cheapest LLM for agentic work?**
-In this benchmark, GLM-5.3-flash — it completed the same 6-turn agent task for $0.0018, 77× cheaper than Claude Opus 5 and 15.5× cheaper than the best open-weight alternative (Qwen3-235B).
+In this benchmark, GLM-5.3-flash, it completed the same 6-turn agent task for $0.0018, 77× cheaper than Claude Opus 5 and 15.5× cheaper than the best open-weight alternative (Qwen3-235B).
 
 **Is a cheap token price the same as a cheap model?**
-No — that's the benchmark's core finding. Token price predicts almost nothing about real task cost. Qwen3-235B looked cheap per token but finished 15.5× more expensive because of verbosity, multiplied by per-turn context re-reads.
+No, that's the benchmark's core finding. Token price predicts almost nothing about real task cost. Qwen3-235B looked cheap per token but finished 15.5× more expensive because of verbosity, multiplied by per-turn context re-reads.
 
 **How is this benchmark different from LLM leaderboards?**
 Leaderboards score quality; this measures billed cost per *completed task* with a hard USD budget kill-switch. "Opus burned $1 before finishing" is a result here, not a footnote.
@@ -145,7 +166,7 @@ Leaderboards score quality; this measures billed cost per *completed task* with 
 Yes. It needs PowerShell 5+ and an `OPENAI_API_KEY` (OpenRouter-compatible by default). See [Using presets](#using-presets). The runner includes a key-safety gate that refuses to start if a key is exposed in repo files.
 
 **Can I test a model that isn't in the list?**
-Yes — no preset file needed: `.\scripts\run_benchmark.ps1 -Preset general -Models 'vendor/new-model-id'`. Any OpenAI-compatible endpoint works via `-ApiBase`.
+Yes, no preset file needed: `.\scripts\run_benchmark.ps1 -Preset general -Models 'vendor/new-model-id'`. Any OpenAI-compatible endpoint works via `-ApiBase`.
 
 **Are the costs accurate?**
 They are actual billed amounts extracted from API responses (`usage.cost`), captured Sep 22, 2026. Absolute prices age quickly; the methodology (measure per-task, not per-token) doesn't.
@@ -153,28 +174,28 @@ They are actual billed amounts extracted from API responses (`usage.cost`), capt
 ## Limitations
 
 - Single task per test; one model's "same output quality" is judged by task completion, not output-quality scoring.
-- 2026 pricing snapshot — absolute numbers age fast; the *methodology* (measure per-task, not per-token) doesn't.
+- 2026 pricing snapshot, absolute numbers age fast; the *methodology* (measure per-task, not per-token) doesn't.
 
 ## Contributing
 
 PRs welcome, two ways:
 
 - **New preset:** drop a JSON in `presets/` (schema above; a `tasks/<name>.md` turn-1 prompt is required).
-- **New results:** run any preset with your key and append via the runner — `data/preset_runs.csv` renders on the live report automatically.
+- **New results:** run any preset with your key and append via the runner, `data/preset_runs.csv` renders on the live report automatically.
 
 ## Cite / share
 
 Found this useful? Star the repo and share the live report: **https://jolubriones.github.io/llm-cost-benchmark/**
 
-If you reference the finding, please keep the date: *"As of Sep 2026, GLM-5.3-flash completed a 6-turn agent task for $0.0018 vs $0.14 for Claude Opus 5 (77× gap) — measured with real billed API spend."*
+If you reference the finding, please keep the date: *"As of Sep 2026, GLM-5.3-flash completed a 6-turn agent task for $0.0018 vs $0.14 for Claude Opus 5 (77× gap), measured with real billed API spend."*
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Data in `data/` is yours to use; attribution appreciated.
+MIT, see [LICENSE](LICENSE). Data in `data/` is yours to use; attribution appreciated.
 
 ## Built with
 
-The Sep 22 example run — benchmark design, orchestration, analysis, and this report — was built and executed with [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), an open-source agent harness. The runner itself is plain PowerShell and has no dependency on it.
+The Sep 22 example run, benchmark design, orchestration, analysis, and this report, was built and executed with [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), an open-source agent harness. The runner itself is plain PowerShell and has no dependency on it.
 
 ---
-*Built as a personal benchmarking exercise. Data and scripts included — rerun it yourself.*
+*Built as a personal benchmarking exercise. Data and scripts included, rerun it yourself.*

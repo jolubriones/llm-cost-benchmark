@@ -14,6 +14,13 @@ A reproducible open-source LLM cost benchmark runner (PowerShell, any OpenAI-com
 - Agentic workloads compound verbosity: each turn re-reads prior context, so talkative models pay their verbosity tax with interest every turn.
 - Practical rule: budget agent workloads by **cost-per-completed-task**, never price-per-million-tokens.
 
+## Update (Sep 22, 2026): quality-graded head-to-head, MiMo v2.6
+
+- The 6-turn `general` task was re-run with functional quality grading: each model's final code is executed in a real Windows PowerShell 5.1 child process (`scripts/quality_check.ps1`, 5 checks; transcripts in `data/outputs/`).
+- **xiaomi/mimo-v2.6-flash is the new value champion**: $0.0021 (2.3x cheaper than glm-5.3-flash's $0.0049), ~3x faster, 5/5 functional checks. glm-5.3-flash also scored 5/5. xiaomi/mimo-v2.6-pro cost $0.0071 and scored 2/5 (unstable across runs: 4/5, 3/5, 2/5).
+- **Reasoning-only turns are a real agentic failure mode**: reasoning models can return turns with empty visible content (all output in `reasoning_content`), which poisons multi-turn history and 400s on some providers. Fix: `reasoning: { exclude: true }` (runner switch `-ExcludeReasoning`).
+- **max_tokens starvation**: at 800 tokens, reasoning models burned the budget on invisible thinking (no code delivered, or code truncated mid-statement and unparseable). The `general` preset now uses 2000.
+
 ## Machine-readable results
 
 - `data/results.csv`, `data/agentic_results.csv`, `data/agentic_results_open.csv` — legacy Sep 22 run files (these also carry a `cum_cost_php` column)

@@ -35,6 +35,7 @@ param(
     [string[]]$Models,          # override preset model list (quick-test new models)
     [string]$TaskText,          # override preset task: turn 1 uses this text
     [string]$ApiBase = 'https://openrouter.ai/api/v1/chat/completions',
+    [switch]$ExcludeReasoning,  # ask providers to strip reasoning_content (fixes models that return empty visible content)
     [string]$CurrencyCode = '',   # optional display currency, e.g. 'PHP' (USD is always recorded)
     [double]$CurrencyRate = 0     # units of CurrencyCode per 1 USD, e.g. 62.9; required with -CurrencyCode
 )
@@ -190,7 +191,7 @@ foreach ($file in $files) {
 
     foreach ($m in $spec.models) {
         Write-Host ("`n-> {0}" -f $m) -ForegroundColor Cyan
-        $history = @()
+        $history = @(); $assistantMsgs = @()
         $cumCost = 0.0; $checksPassed = 0; $outcome = 'completed'
         $sw = [Diagnostics.Stopwatch]::StartNew()
 
@@ -206,6 +207,7 @@ foreach ($file in $files) {
                 max_tokens  = [int]$spec.max_tokens
                 temperature = [double]$spec.temperature
             }
+            if ($ExcludeReasoning) { $body.reasoning = @{ exclude = $true } }
             try {
                 $resp = Invoke-RestMethod -Method Post -Uri $ApiBase `
                     -Headers @{ Authorization = "Bearer $apiKey" } `
@@ -221,6 +223,7 @@ foreach ($file in $files) {
                 $asst = [string]$resp.choices[0].message.content
                 if ([string]::IsNullOrWhiteSpace($asst)) { $asst = '[no visible output - reasoning only]' }
                 $history += @{ role = 'assistant'; content = $asst }
+                $assistantMsgs += $asst
 
                 $stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', $inv)
                 $row = [ordered]@{
@@ -256,14 +259,40 @@ foreach ($file in $files) {
             }
         }
 
-        # --- auto-checks on final assistant output -----------------------
+        # --- auto-checks on assistant output -----------------------------
+        # Any-turn match: code usually appears in early turns; later turns
+        # are prose follow-ups (docs, failure lists) that would false-fail.
         if ($outcome -eq 'running') { $outcome = 'completed' }
         if ($outcome -eq 'completed' -and $spec.auto_checks) {
-            $final = $history[-1].content
             foreach ($chk in $spec.auto_checks) {
-                if ($final -match $chk.pattern) { $checksPassed++ }
+                $pat = [string]$chk.pattern
+                if ($assistantMsgs | Where-Object { $_ -match $pat }) { $checksPassed++ }
             }
         }
+
+        # --- save transcript for quality grading -------------------------
+        try {
+            $outDir = Join-Path $root 'data\outputs'
+            if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+            $mSan = ($m -replace '[^A-Za-z0-9._-]', '_')
+            $stampF = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ', $inv)
+            $tpath = Join-Path $outDir ("{0}__{1}__{2}.md" -f $name, $mSan, $stampF)
+            $sb = New-Object Text.StringBuilder
+                [void]$sb.AppendLine("# run: $name / $m / $stampF")
+                [void]$sb.AppendLine("outcome: $outcome | turns_completed: $($assistantMsgs.Count)/$turns | cost_usd: $([math]::Round($cumCost,6))")
+                [void]$sb.AppendLine()
+            for ($i = 0; $i -lt $assistantMsgs.Count; $i++) {
+                [void]$sb.AppendLine("## turn $($i + 1)")
+                [void]$sb.AppendLine()
+                [void]$sb.AppendLine($assistantMsgs[$i])
+                [void]$sb.AppendLine()
+            }
+            [IO.File]::WriteAllText($tpath, $sb.ToString(), (New-Object Text.UTF8Encoding($false)))
+            Write-Host ("   transcript: {0}" -f (Resolve-Path -Relative $tpath)) -ForegroundColor DarkGray
+        } catch {
+            Write-Host ("   transcript save failed: {0}" -f $_.Exception.Message) -ForegroundColor Yellow
+        }
+
         if ($outcome -ne 'running') {
             # stamp last row with final outcome + checks (any outcome)
             $all = Import-Csv $csvPath
