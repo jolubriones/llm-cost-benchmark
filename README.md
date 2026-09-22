@@ -1,5 +1,7 @@
 # llm-cost-benchmark — run real-cost LLM benchmarks with a budget kill-switch
 
+[![Ko-fi](https://img.shields.io/badge/Support%20me%20on-Ko--fi-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/jolubriones)
+
 **What does it actually cost a model to do *your* job?** Don't guess from price sheets. This open-source benchmark runner sends any model (or set of models) through a real agentic task, tracks **actual billed API spend** turn by turn, and hard-stops every model at a USD budget you choose.
 
 - ⚡ **Quickstart (3 lines):**
@@ -205,7 +207,7 @@ Found this useful? Star the repo and share the live report: **https://jolubrione
 
 If this benchmark saved you real money on your agent workloads, a small tip is always appreciated: [☕ Ko-fi](https://ko-fi.com/jolubriones)
 
-If you reference the finding, please keep the date: *"As of Sep 2026, GLM-5.3-flash completed a 6-turn agent task for $0.0018 vs $0.14 for Claude Opus 5 (77× gap), measured with real billed API spend."*
+If you reference the finding, please keep the date: *"As of Sep 2026, MiMo v2.6-flash completed a 6-turn agent task for $0.0025 vs $0.284 for Claude Opus 5 (112× gap, same config, back-to-back), measured with real billed API spend. The earlier original-config snapshot showed GLM-5.3-flash at $0.0018 vs $0.14 for Opus (77×)."*
 
 ## License
 

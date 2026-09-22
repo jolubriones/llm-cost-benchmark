@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The 77× Finding — What Six LLMs Actually Cost to Do the Same Job | LLM Cost Benchmark</title>
-<meta name="description" content="Hands-on benchmark of six frontier LLMs (GLM-5.3-flash, GPT-5.6-luna, DeepSeek V4 Pro, Kimi K2, Claude Sonnet 5, Claude Opus 5, Qwen3-235B) with real billed API costs. Key finding: the cheapest model finished the same 6-turn agent job 77× cheaper. Includes reproducible preset runner with USD budget kill-switch.">
+<title>The 112× Finding — What Frontier LLMs Actually Cost to Do the Same Job | LLM Cost Benchmark</title>
+<meta name="description" content="Hands-on benchmark of frontier LLMs (MiMo v2.6, GLM-5.3-flash, GPT-5.6-luna, DeepSeek V4 Pro, Kimi K2, Claude Sonnet 5, Claude Opus 5, Qwen3-235B) with real billed API costs. Key finding: the cheapest model finished the same 6-turn agent job 112× cheaper. Includes reproducible preset runner with USD budget kill-switch.">
 <meta name="keywords" content="LLM cost comparison, AI model benchmark, cheapest LLM, LLM API costs, agentic benchmark, GLM flash, Claude Opus cost, GPT cost comparison, open-weight models, cost per task">
 <meta name="author" content="Jolu Briones">
 <link rel="canonical" href="https://jolubriones.github.io/llm-cost-benchmark/">
 <meta property="og:type" content="article">
-<meta property="og:title" content="The 77× Finding — What Six LLMs Actually Cost to Do the Same Job">
-<meta property="og:description" content="Real billed API spend, not price sheets: the cheapest model finished the same 6-turn agent job 77× cheaper than the most expensive. Reproducible benchmark with preset runner.">
+<meta property="og:title" content="The 112× Finding — What Frontier LLMs Actually Cost to Do the Same Job">
+<meta property="og:description" content="Real billed API spend, not price sheets: the cheapest model finished the same 6-turn agent job 112× cheaper than the most expensive. Reproducible benchmark with preset runner.">
 <meta property="og:site_name" content="LLM Cost Benchmark">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The 77× Finding — What Six LLMs Actually Cost to Do the Same Job">
-<meta name="twitter:description" content="Six frontier LLMs, same job, real invoices. The cost gap: 77×. Cheap-per-token ≠ cheap-per-task.">
+<meta name="twitter:title" content="The 112× Finding — What Frontier LLMs Actually Cost to Do the Same Job">
+<meta name="twitter:description" content="Frontier LLMs, same job, real invoices. The cost gap: 112×. Cheap-per-token ≠ cheap-per-task.">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "ScholarlyArticle",
-  "name": "The 77× Finding — What Six LLMs Actually Cost to Do the Same Job",
-  "description": "Benchmark of six frontier LLMs using real billed API spend on identical Q&A and 6-turn agentic workloads. Finding: 77× cost gap between cheapest and priciest model for equivalent output; published token prices are a poor predictor of real task cost.",
+  "name": "The 112× Finding — What Frontier LLMs Actually Cost to Do the Same Job",
+  "description": "Benchmark of frontier LLMs using real billed API spend on identical Q&A and 6-turn agentic workloads. Finding: 112× cost gap between cheapest and priciest model for equivalent output (same config, back-to-back); published token prices are a poor predictor of real task cost.",
   "author": { "@type": "Person", "name": "Jolu Briones" },
   "datePublished": "2026-09-22",
   "keywords": "LLM cost comparison, agentic benchmark, AI model pricing, open-weight models",
@@ -67,18 +67,18 @@
 <body>
 
 <header>
-<h1>The 77× Finding 🧪</h1>
-<p class="sub">What do six frontier LLMs <em>actually</em> cost to do the same job? A hands-on benchmark with real API spend — not list prices, actual invoices.</p>
+<h1>The 112× Finding 🧪</h1>
+<p class="sub">What do frontier LLMs <em>actually</em> cost to do the same job? A hands-on benchmark with real API spend — not list prices, actual invoices.</p>
 </header>
 
 <section aria-label="Key findings">
-<p><strong>Key findings:</strong> On identical workloads, <strong>GLM-5.3-flash</strong> completed the same six-turn agentic job for <strong>$0.0018</strong> while <strong>Claude Opus 5</strong> cost <strong>$0.14</strong> — a <strong>77× cost gap</strong> for equivalent output. Restricted to open-weight models, GLM flash was still <strong>15.5× cheaper</strong> than Qwen3-235B. The core insight: <strong>cheap-per-token does not mean cheap-per-task</strong> — verbosity and context re-reads, not token price, drove real costs. All numbers are real billed API spend (not published price sheets), with raw data and a reproducible preset-based benchmark runner included in this repository.</p>
+<p><strong>Key findings:</strong> On the same 6-turn agentic job, measured back-to-back under the same config, <strong>MiMo v2.6-flash</strong> completed the task for <strong>$0.0025</strong> while <strong>Claude Opus 5</strong> cost <strong>$0.28</strong> — a <strong>112× cost gap</strong>, with both passing functional quality checks. Even restricted to open-weight models (legacy run), GLM-5.3-flash was <strong>15.5× cheaper</strong> than Qwen3-235B. The core insight: <strong>cheap-per-token does not mean cheap-per-task</strong> — verbosity and context re-reads, not token price, drove real costs. All numbers are real billed API spend (not published price sheets), with raw data and a reproducible preset-based benchmark runner included in this repository.</p>
 </section>
 
 <div class="hero">
-  <div class="stat"><div class="big">77×</div><div class="lbl">cost gap between cheapest and priciest model on the same 6-turn agent job</div></div>
-  <div class="stat"><div class="big">15.5×</div><div class="lbl">cheapest vs best open-weight rival — the gap persists without Big-AI tax</div></div>
-  <div class="stat"><div class="big">$0.0018</div><div class="lbl">all-in cost of a full agentic run on GLM-5.3-flash (Opus 5: $0.14)</div></div>
+  <div class="stat"><div class="big">112×</div><div class="lbl">cost gap, cheapest (MiMo v2.6-flash $0.0025) vs priciest (Opus 5 $0.28) on the same 6-turn agent job, same config</div></div>
+  <div class="stat"><div class="big">15.5×</div><div class="lbl">open-weights-only legacy run: GLM flash vs Qwen3-235B — the gap persists without Big-AI tax</div></div>
+  <div class="stat"><div class="big">$0.0025</div><div class="lbl">all-in cost of a full check-passing agentic run on MiMo v2.6-flash (Opus 5: $0.28)</div></div>
 </div>
 
 <section aria-label="Update: quality-graded head-to-head" style="border:1px solid #7aa; border-radius:10px; padding:14px 18px; margin-top:14px">
@@ -108,7 +108,7 @@
 
 <h2>1 · Six-turn agent task — full field, Sep 22 original config (legacy snapshot)</h2>
 <div class="card" id="full"></div>
-<p class="note">The original Sep 22 snapshot: all six models, original runner config. Under that config GLM-5.3-flash led at $0.0018, making Opus 5 a 77× outlier. Kept unchanged for the legacy comparison; the current headline is chart 0 above.</p></p>
+<p class="note">The original Sep 22 snapshot: all six models, original runner config. Under that config GLM-5.3-flash led at $0.0018, making Opus 5 a 77× outlier. Kept unchanged for the legacy comparison; the current headline is chart 0 above.</p>
 
 <h2>2 · Six-turn agent task — open-weight models only</h2>
 <div class="card" id="open"></div>

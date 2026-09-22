@@ -3,7 +3,7 @@
 # Usage: .\publish.ps1 [-RepoName llm-cost-benchmark]
 param(
   [string]$RepoName = "llm-cost-benchmark",
-  [string]$Description = "The 77x Finding - what six frontier LLMs actually cost to do the same job (real billed API spend)."
+  [string]$Description = "The 112x Finding - what frontier LLMs actually cost to do the same job (real billed API spend, MiMo v2.6-flash $0.0025 vs Opus 5 $0.28)."
 )
 $gh = "$env:ProgramFiles\GitHub CLI\gh.exe"
 if (-not (Test-Path $gh)) { $gh = 'gh' }
